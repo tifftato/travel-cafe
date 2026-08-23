@@ -1,0 +1,205 @@
+<script setup>
+import { computed } from 'vue'
+
+const props = defineProps({
+  condition: { type: String, default: 'clear' }, // clear | clouds | rain | snow | thunderstorm | fog
+  isNight: { type: Boolean, default: false },
+})
+
+const rainDrops = computed(() =>
+  Array.from({ length: 60 }, (_, i) => ({
+    left: Math.random() * 100,
+    delay: Math.random() * 1.2,
+    duration: 0.5 + Math.random() * 0.4,
+  }))
+)
+
+const snowFlakes = computed(() =>
+  Array.from({ length: 40 }, () => ({
+    left: Math.random() * 100,
+    delay: Math.random() * 6,
+    duration: 6 + Math.random() * 5,
+    size: 3 + Math.random() * 4,
+  }))
+)
+
+const clouds = computed(() =>
+  Array.from({ length: 4 }, (_, i) => ({
+    top: 8 + i * 12 + Math.random() * 6,
+    delay: i * -8,
+    duration: 40 + Math.random() * 20,
+    scale: 0.7 + Math.random() * 0.6,
+  }))
+)
+
+// 맑은 밤: 반짝이는 별
+const stars = computed(() =>
+  Array.from({ length: 70 }, () => ({
+    left: Math.random() * 100,
+    top: Math.random() * 55, // 하늘 영역(위쪽)에만 분포
+    delay: Math.random() * 4,
+    duration: 2 + Math.random() * 3,
+    size: 1 + Math.random() * 1.8,
+  }))
+)
+</script>
+
+<template>
+  <div class="weather" aria-hidden="true">
+    <!-- 맑은 밤: 별 -->
+    <div v-if="condition === 'clear' && isNight" class="weather__stars">
+      <span
+        v-for="(s, i) in stars"
+        :key="i"
+        class="weather__star"
+        :style="{
+          left: s.left + '%',
+          top: s.top + '%',
+          width: s.size + 'px',
+          height: s.size + 'px',
+          animationDelay: s.delay + 's',
+          animationDuration: s.duration + 's',
+        }"
+      />
+    </div>
+
+    <!-- 비 -->
+    <div v-if="condition === 'rain' || condition === 'thunderstorm'" class="weather__rain">
+      <span
+        v-for="(d, i) in rainDrops"
+        :key="i"
+        class="weather__drop"
+        :style="{ left: d.left + '%', animationDelay: d.delay + 's', animationDuration: d.duration + 's' }"
+      />
+    </div>
+
+    <!-- 천둥 번쩍임 -->
+    <div v-if="condition === 'thunderstorm'" class="weather__flash" />
+
+    <!-- 눈 -->
+    <div v-if="condition === 'snow'" class="weather__snow">
+      <span
+        v-for="(f, i) in snowFlakes"
+        :key="i"
+        class="weather__flake"
+        :style="{
+          left: f.left + '%',
+          width: f.size + 'px',
+          height: f.size + 'px',
+          animationDelay: f.delay + 's',
+          animationDuration: f.duration + 's',
+        }"
+      />
+    </div>
+
+    <!-- 구름 -->
+    <div v-if="condition === 'clouds'" class="weather__clouds">
+      <span
+        v-for="(c, i) in clouds"
+        :key="i"
+        class="weather__cloud"
+        :style="{
+          top: c.top + '%',
+          animationDelay: c.delay + 's',
+          animationDuration: c.duration + 's',
+          transform: `scale(${c.scale})`,
+        }"
+      />
+    </div>
+
+    <!-- 안개 -->
+    <div v-if="condition === 'fog'" class="weather__fog" />
+  </div>
+</template>
+
+<style scoped>
+.weather {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+/* 비 */
+.weather__drop {
+  position: absolute;
+  top: -10%;
+  width: 1px;
+  height: 60px;
+  background: linear-gradient(to bottom, transparent, rgba(190, 210, 255, 0.55));
+  animation: rain-fall linear infinite;
+}
+@keyframes rain-fall {
+  to {
+    transform: translateY(120vh);
+  }
+}
+
+.weather__flash {
+  position: absolute;
+  inset: 0;
+  background: white;
+  opacity: 0;
+  animation: flash 6s infinite;
+}
+@keyframes flash {
+  0%, 96%, 100% { opacity: 0; }
+  97% { opacity: 0.35; }
+  98% { opacity: 0; }
+  99% { opacity: 0.2; }
+}
+
+/* 눈 */
+.weather__flake {
+  position: absolute;
+  top: -5%;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.85);
+  animation: snow-fall linear infinite;
+}
+@keyframes snow-fall {
+  from {
+    transform: translateY(0) translateX(0);
+  }
+  to {
+    transform: translateY(110vh) translateX(20px);
+  }
+}
+
+/* 구름 */
+.weather__cloud {
+  position: absolute;
+  left: -20%;
+  width: 160px;
+  height: 50px;
+  background: rgba(255, 255, 255, 0.55);
+  border-radius: 999px;
+  filter: blur(4px);
+  animation: cloud-drift linear infinite;
+}
+@keyframes cloud-drift {
+  from { transform: translateX(0); }
+  to { transform: translateX(140vw); }
+}
+
+/* 안개 */
+.weather__fog {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(220, 220, 220, 0.05), rgba(220, 220, 220, 0.35) 70%);
+  backdrop-filter: blur(1.5px);
+}
+
+/* 맑은 밤: 별 */
+.weather__star {
+  position: absolute;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 0 4px 1px rgba(255, 255, 255, 0.7);
+  animation: star-twinkle ease-in-out infinite;
+}
+@keyframes star-twinkle {
+  0%, 100% { opacity: 0.2; transform: scale(0.8); }
+  50% { opacity: 1; transform: scale(1.2); }
+}
+</style>
