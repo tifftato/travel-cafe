@@ -1,12 +1,9 @@
 <script setup>
 import { computed, onMounted, onUnmounted, ref } from 'vue'
-import { useRouter } from 'vue-router'
 
 const props = defineProps({
   city: { type: Object, required: true }, // 여행지(도착지)
 })
-
-const router = useRouter()
 
 // 1초마다 갱신되는 현재 시각
 const now = ref(new Date())
@@ -43,10 +40,6 @@ const destTime = computed(() => {
 // 출발지: 위치 기반 추정 없이 고정 라벨로 표시
 const originCode = computed(() => 'HOME')
 const destCode = computed(() => props.city.airportCode)
-
-function goToBillboard() {
-  router.push({ name: 'billboard' })
-}
 </script>
 
 <template>
@@ -57,7 +50,6 @@ function goToBillboard() {
       <span class="clock__time" aria-hidden="true">{{ destTime }}</span>
     </div>
     <div class="clock__route" aria-hidden="true">{{ originCode }} → {{ destCode }}</div>
-    <button class="clock__btn" @click="goToBillboard">✈ 다른 도시로</button>
   </div>
 </template>
 
@@ -105,32 +97,5 @@ function goToBillboard() {
   text-shadow:
     0 1px 2px rgba(0, 0, 0, 0.95),
     0 2px 8px rgba(0, 0, 0, 0.8);
-}
-
-.clock__btn {
-  margin-top: 6px;
-  background: transparent;
-  color: #ffffff;
-  border: 1.5px solid rgba(255, 255, 255, 0.85);
-  padding: 7px 15px;
-  border-radius: 999px;
-  font-weight: 700;
-  font-size: 12px;
-  cursor: pointer;
-  white-space: nowrap;
-  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9);
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.4);
-  transition: background 0.15s ease, border-color 0.15s ease;
-}
-
-.clock__btn:hover {
-  background: rgba(255, 255, 255, 0.15);
-  border-color: #ffffff;
-}
-
-@media (max-width: 480px) {
-  .clock {
-    gap: 4px;
-  }
 }
 </style>

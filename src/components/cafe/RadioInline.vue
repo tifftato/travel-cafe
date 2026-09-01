@@ -1,27 +1,28 @@
 <script setup>
+import { inject } from 'vue'
 import { useRadioStore } from '../../stores/radio'
 import { useImageHotspot } from '../../composables/useImageHotspot'
 import { useImageRegion } from '../../composables/useImageRegion'
 import RotaryKnob from './RotaryKnob.vue'
 
 const props = defineProps({
-  imgRef: { type: Object, required: true },
   // hotspots.radio = { display: {x,y,width,height}, power: {x,y}, volume: {x,y} }
   config: { type: Object, required: true },
 })
 
 const radio = useRadioStore()
+const imgRef = inject('frameImgRef')
 
 const { style: displayStyle } = props.config.display
-  ? useImageRegion(props.imgRef, props.config.display)
+  ? useImageRegion(imgRef, props.config.display)
   : { style: { value: {} } }
 
 const { style: powerStyle } = props.config.power
-  ? useImageHotspot(props.imgRef, props.config.power.x, props.config.power.y)
+  ? useImageHotspot(imgRef, props.config.power.x, props.config.power.y)
   : { style: { value: {} } }
 
 const { style: volumeStyle } = props.config.volume
-  ? useImageHotspot(props.imgRef, props.config.volume.x, props.config.volume.y)
+  ? useImageHotspot(imgRef, props.config.volume.x, props.config.volume.y)
   : { style: { value: {} } }
 </script>
 

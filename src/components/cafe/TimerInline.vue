@@ -1,14 +1,15 @@
 <script setup>
+import { inject } from 'vue'
 import { usePomodoroStore } from '../../stores/pomodoro'
 import { useImageRegion } from '../../composables/useImageRegion'
 
 const props = defineProps({
-  imgRef: { type: Object, required: true },
   region: { type: Object, required: true }, // { x, y, width, height } — 빈 화면 영역
 })
 
 const pomodoro = usePomodoroStore()
-const { style } = useImageRegion(props.imgRef, props.region)
+const imgRef = inject('frameImgRef')
+const { style } = useImageRegion(imgRef, props.region)
 </script>
 
 <template>

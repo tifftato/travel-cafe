@@ -1,5 +1,6 @@
 <script setup>
 import { computed, onMounted, ref, watch } from 'vue'
+import { useRouter } from 'vue-router'
 import { getCityById } from '../data/cities'
 import { useWeatherStore } from '../stores/weather'
 import { useRadioStore } from '../stores/radio'
@@ -16,10 +17,15 @@ const props = defineProps({
   cityId: { type: String, required: true },
 })
 
+const router = useRouter()
 const city = computed(() => getCityById(props.cityId))
 const weather = useWeatherStore()
 const radio = useRadioStore()
 const config = useConfigStore()
+
+function goToBillboard() {
+  router.push({ name: 'billboard' })
+}
 
 // 날씨/카페 배경음 음소거 여부 (다음 방문에도 유지되도록 저장)
 const soundMuted = ref(localStorage.getItem('travel-cafe:sound-muted') === 'true')
@@ -90,6 +96,8 @@ const needsFloatingWidget = computed(() => !hasTimerHotspot.value || !hasRadioHo
       <UnitToggler />
     </div>
 
+    <button class="cafe__bottom-left" @click="goToBillboard">✈ 다른 도시로</button>
+
     <!-- 그림 속에 타이머/라디오가 이미 그려진 만큼은 FrameForeground가 직접 표시하고,
          아직 커버되지 않은 나머지만 우하단 플로팅 위젯으로 보완합니다 -->
     <CafeWidget
@@ -150,5 +158,34 @@ const needsFloatingWidget = computed(() => !hasTimerHotspot.value || !hasRadioHo
   display: flex;
   align-items: center;
   justify-content: center;
+}
+
+/* "다른 도시로": 화면 좌측 하단 고정. 중앙 최하단의 시계(TravelClock)와는
+   완전히 분리된 별도 요소라, 시계 쪽 크기/레이아웃에 영향을 주지 않습니다. */
+.cafe__bottom-left {
+  position: absolute;
+  bottom: 20px;
+  left: 24px;
+  z-index: 6;
+  background: rgba(13, 15, 22, 0.5);
+  color: #ffffff;
+  border: 1.5px solid rgba(255, 255, 255, 0.85);
+  padding: 7px 15px;
+  border-radius: 999px;
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 12px;
+  cursor: pointer;
+  white-space: nowrap;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(4px);
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.cafe__bottom-left:hover,
+.cafe__bottom-left:focus-visible {
+  background: rgba(255, 255, 255, 0.15);
+  border-color: #ffffff;
 }
 </style>

@@ -1,16 +1,16 @@
 <script setup>
-import { computed } from 'vue'
+import { computed, inject } from 'vue'
 import { useImageRegion } from '../../composables/useImageRegion'
 import { useConfigStore } from '../../stores/config'
 
 const props = defineProps({
-  imgRef: { type: Object, required: true },
   region: { type: Object, required: true }, // { x, y, width, height }
   iced: { type: Boolean, default: false },
 })
 
 const config = useConfigStore()
-const { style: regionStyle } = useImageRegion(props.imgRef, props.region)
+const imgRef = inject('frameImgRef')
+const { style: regionStyle } = useImageRegion(imgRef, props.region)
 
 // 물방울: 랜덤이지만 리렌더마다 위치가 안 바뀌도록 컴포넌트 생성 시 한 번만 계산
 const droplets = computed(() =>

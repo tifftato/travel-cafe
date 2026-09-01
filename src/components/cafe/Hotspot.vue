@@ -1,8 +1,8 @@
 <script setup>
+import { inject } from 'vue'
 import { useImageHotspot } from '../../composables/useImageHotspot'
 
 const props = defineProps({
-  imgRef: { type: Object, required: true }, // 기준이 되는 <img> 엘리먼트 ref
   x: { type: Number, required: true }, // 0~1
   y: { type: Number, required: true }, // 0~1
   label: { type: String, required: true }, // 스크린리더용 설명
@@ -10,7 +10,8 @@ const props = defineProps({
 })
 
 const emit = defineEmits(['click'])
-const { style } = useImageHotspot(props.imgRef, props.x, props.y)
+const imgRef = inject('frameImgRef')
+const { style } = useImageHotspot(imgRef, props.x, props.y)
 </script>
 
 <template>

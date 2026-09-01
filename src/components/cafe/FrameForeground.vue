@@ -1,5 +1,5 @@
 <script setup>
-import { computed, ref } from 'vue'
+import { computed, ref, provide } from 'vue'
 import { useOptionalImage } from '../../composables/useOptionalImage'
 import { useImageHotspot } from '../../composables/useImageHotspot'
 import Hotspot from './Hotspot.vue'
@@ -40,6 +40,13 @@ const isBakedIn = computed(() => Boolean(props.city.hotspots))
 // 핫스팟 좌표는 항상 "낮 이미지" 기준입니다. 같은 --seed로 뽑은 밤 이미지는 구도가
 // 동일하다고 가정하므로 좌표를 그대로 재사용할 수 있습니다 (별도 밤 전용 좌표 불필요).
 const frameImgRef = ref(null)
+// 최상위 ref를 자동으로 .value까지 언랩해버려서, 자식이 받는 값이 "ref 객체"가 아니라
+// "이미 풀린 값"(처음엔 null, 나중엔 DOM 엘리먼트 그 자체)이 됩니다. 그러면 자식 쪽
+// 컴포저블(useImageHotspot/useImageRegion)의 imgRef.value가 null.value로 터지거나
+// (엘리먼트).value → undefined로 조용히 실패해서, 라디오/타이머/커피 위치 계산이
+// 낮/밤 상관없이 항상 멈춰버립니다. provide/inject는 이 자동 언랩을 타지 않으므로
+// ref 객체 그 자체가 그대로 전달됩니다.
+provide('frameImgRef', frameImgRef)
 const openPanel = ref(null) // null | 'radio' | 'timer' (점 기반 팝오버 모드에서만 사용)
 
 function togglePanel(key) {
@@ -92,21 +99,17 @@ const emit = defineEmits(['coverage-change'])
 
 <template>
   <div class="frame" :class="{ 'frame--hidden': !visible }">
+    <!-- 낮/밤 이미지를 별도 <img>로 나누지 않고 src만 바꿉니다 — 이전에는 밤에 v-show로
+         낮 이미지를 display:none 시켰는데, frameImgRef가 그 낮 이미지에만 걸려있어서
+         밤에 크기가 0으로 잡혀 라디오/타이머/커피 핫스팟 위치 계산이 전부 깨졌습니다. -->
     <img
       ref="frameImgRef"
-      v-show="dayExists && !(isNight && nightExists)"
-      :src="frameDayUrl"
+      v-show="dayExists"
+      :src="isNight && nightExists ? frameNightUrl : frameDayUrl"
       alt=""
       class="frame__img"
       :class="{ 'frame__img--reference-only': isBakedIn }"
       @error="dayExists = false"
-    />
-    <img
-      v-if="isNight && nightExists"
-      :src="frameNightUrl"
-      alt=""
-      class="frame__img"
-      :class="{ 'frame__img--reference-only': isBakedIn }"
     />
     <!-- 이미지가 없을 때: 정면 구도를 흉내낸 그라디언트 테이블 -->
     <div v-if="dayExists === false" class="frame__placeholder" :style="{ height: itemsHeight }"></div>
@@ -114,12 +117,10 @@ const emit = defineEmits(['coverage-change'])
     <!-- 타이머: 빈 화면 영역에 직접 삽입 -->
     <TimerInline
       v-if="timerMode === 'inline'"
-      :img-ref="frameImgRef"
       :region="city.hotspots.timer.screen"
     />
     <template v-else-if="timerMode === 'popover'">
       <Hotspot
-        :img-ref="frameImgRef"
         :x="city.hotspots.timer.x"
         :y="city.hotspots.timer.y"
         label="포모도로 타이머"
@@ -134,12 +135,10 @@ const emit = defineEmits(['coverage-change'])
     <!-- 라디오: 이름(빈 디스플레이)+재생(버튼)+볼륨(노브)을 각각 소품 위에 직접 삽입 -->
     <RadioInline
       v-if="radioMode === 'inline'"
-      :img-ref="frameImgRef"
       :config="city.hotspots.radio"
     />
     <template v-else-if="radioMode === 'popover'">
       <Hotspot
-        :img-ref="frameImgRef"
         :x="city.hotspots.radio.x"
         :y="city.hotspots.radio.y"
         label="라디오"
@@ -154,12 +153,10 @@ const emit = defineEmits(['coverage-change'])
     <!-- 커피: 뜨거우면 김, 아이스면 물방울. 잔 근처를 누르면 냅킨 메모/커피점 중 고르는 카드가 뜹니다 -->
     <template v-if="hasCoffee">
       <CoffeeEffect
-        :img-ref="frameImgRef"
         :region="city.hotspots.coffee.region"
         :iced="Boolean(city.hotspots.coffee.iced)"
       />
       <Hotspot
-        :img-ref="frameImgRef"
         :x="city.hotspots.coffee.point.x"
         :y="city.hotspots.coffee.point.y"
         label="냅킨 메모 또는 오늘의 커피점 보기"

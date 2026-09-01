@@ -1,5 +1,5 @@
 <script setup>
-import { computed, ref, watch } from 'vue'
+import { computed, ref, watch, onMounted, onUnmounted } from 'vue'
 
 const props = defineProps({
   condition: { type: String, default: 'clear' }, // clear | clouds | rain | snow | thunderstorm | fog
@@ -19,15 +19,13 @@ const props = defineProps({
 // 동작이 달라 날씨가 통째로 사라질 수 있어서, 존재를 확인한 뒤에만 적용합니다).
 //
 // 밤 전용 마스크(mask_{country}-night.png)가 없으면 낮 마스크로 자동 폴백합니다.
-// 낮/밤은 같은 구도(같은 --seed)라 창문 위치가 동일하므로 낮 마스크를 그대로 써도
-// 정확히 맞습니다 — 야간 프레임 이미지의 해상도/비율이 어긋난 나라(예: 이집트)에서도
-// 안전하게 동작하게 하려는 목적도 있습니다.
 const maskExists = ref(false)
 const maskUrl = ref(null)
+const maskNaturalSize = ref(null) // { w, h } — cover 계산에 필요
 
 function tryLoadMask(url, onSuccess, onFail) {
   const img = new Image()
-  img.onload = onSuccess
+  img.onload = () => onSuccess({ w: img.naturalWidth, h: img.naturalHeight })
   img.onerror = onFail
   img.src = url
 }
@@ -45,7 +43,7 @@ watch(
     if (!props.isNight) {
       tryLoadMask(
         dayUrl,
-        () => { maskUrl.value = dayUrl; maskExists.value = true },
+        (size) => { maskUrl.value = dayUrl; maskNaturalSize.value = size; maskExists.value = true },
         () => { maskExists.value = false }
       )
       return
@@ -54,11 +52,11 @@ watch(
     // 밤: 전용 마스크 먼저 시도, 없으면 낮 마스크로 폴백
     tryLoadMask(
       nightUrl,
-      () => { maskUrl.value = nightUrl; maskExists.value = true },
+      (size) => { maskUrl.value = nightUrl; maskNaturalSize.value = size; maskExists.value = true },
       () => {
         tryLoadMask(
           dayUrl,
-          () => { maskUrl.value = dayUrl; maskExists.value = true },
+          (size) => { maskUrl.value = dayUrl; maskNaturalSize.value = size; maskExists.value = true },
           () => { maskExists.value = false }
         )
       }
@@ -67,15 +65,42 @@ watch(
   { immediate: true }
 )
 
+// CSS mask-size:cover / mask-position:center bottom 키워드에 기대는 대신,
+// 핫스팟 좌표 계산(useImageRegion.js)과 완전히 같은 object-fit:cover 공식을 그대로
+// JS로 재계산해서 px 단위로 박아 넣습니다 — 배경(SceneBackground, object-fit:cover +
+// object-position:center bottom)과 픽셀 단위로 반드시 같은 자리에 맞도록 보장하기 위함입니다.
+const viewport = ref({ w: window.innerWidth, h: window.innerHeight })
+function updateViewport() {
+  viewport.value = { w: window.innerWidth, h: window.innerHeight }
+}
+onMounted(() => window.addEventListener('resize', updateViewport))
+onUnmounted(() => window.removeEventListener('resize', updateViewport))
+
 const maskStyle = computed(() => {
-  if (!maskExists.value || !maskUrl.value) return {}
+  if (!maskExists.value || !maskUrl.value || !maskNaturalSize.value) return {}
+
+  const { w: naturalW, h: naturalH } = maskNaturalSize.value
+  const { w: containerW, h: containerH } = viewport.value
+  if (!naturalW || !naturalH || !containerW || !containerH) return {}
+
+  // object-fit: cover; object-position: center bottom; 과 동일한 스케일/오프셋 계산
+  const scale = Math.max(containerW / naturalW, containerH / naturalH)
+  const displayedW = naturalW * scale
+  const displayedH = naturalH * scale
+  const offsetX = (containerW - displayedW) / 2
+  const offsetY = containerH - displayedH // 바닥 정렬
+
+  const maskImage = `url(${maskUrl.value})`
+  const maskSize = `${displayedW}px ${displayedH}px`
+  const maskPosition = `${offsetX}px ${offsetY}px`
+
   return {
-    WebkitMaskImage: `url(${maskUrl.value})`,
-    maskImage: `url(${maskUrl.value})`,
-    WebkitMaskSize: 'cover',
-    maskSize: 'cover',
-    WebkitMaskPosition: 'center bottom',
-    maskPosition: 'center bottom',
+    WebkitMaskImage: maskImage,
+    maskImage,
+    WebkitMaskSize: maskSize,
+    maskSize,
+    WebkitMaskPosition: maskPosition,
+    maskPosition,
     WebkitMaskRepeat: 'no-repeat',
     maskRepeat: 'no-repeat',
   }
