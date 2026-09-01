@@ -1,74 +1,32 @@
 <script setup>
 import { ref } from 'vue'
-import { usePomodoroStore } from '../../stores/pomodoro'
-import { useRadioStore } from '../../stores/radio'
+import PomodoroPanel from './PomodoroPanel.vue'
+import RadioPanel from './RadioPanel.vue'
 
-defineProps({
+const props = defineProps({
   city: { type: Object, required: true },
+  showTimer: { type: Boolean, default: true },
+  showRadio: { type: Boolean, default: true },
 })
-
-const pomodoro = usePomodoroStore()
-const radio = useRadioStore()
 
 const collapsed = ref(false)
 </script>
 
 <template>
   <div class="widget" :class="{ 'widget--collapsed': collapsed }">
-    <button class="widget__collapse-btn" @click="collapsed = !collapsed" :aria-label="collapsed ? '위젯 펼치기' : '위젯 접기'">
+    <button
+      class="widget__collapse-btn"
+      :aria-label="collapsed ? '위젯 펼치기' : '위젯 접기'"
+      :aria-expanded="!collapsed"
+      @click="collapsed = !collapsed"
+    >
       {{ collapsed ? '☕' : '—' }}
     </button>
 
     <div v-show="!collapsed" class="widget__body">
-      <!-- 포모도로 -->
-      <section class="widget__section">
-        <p class="widget__label">POMODORO · {{ pomodoro.mode === 'focus' ? '집중' : '휴식' }}</p>
-        <div class="widget__timer">
-          <svg viewBox="0 0 100 100" class="widget__ring-svg">
-            <circle cx="50" cy="50" r="44" class="widget__ring-track" />
-            <circle
-              cx="50"
-              cy="50"
-              r="44"
-              class="widget__ring-progress"
-              :style="{ strokeDashoffset: 276 - 276 * pomodoro.progress }"
-            />
-          </svg>
-          <span class="widget__timer-text">{{ pomodoro.minutes }}:{{ pomodoro.seconds }}</span>
-        </div>
-        <div class="widget__buttons">
-          <button @click="pomodoro.toggle()">{{ pomodoro.isRunning ? '일시정지' : '시작' }}</button>
-          <button class="widget__btn-ghost" @click="pomodoro.reset()">리셋</button>
-        </div>
-        <p class="widget__meta">완료한 세션 {{ pomodoro.completedFocusCount }}회</p>
-      </section>
-
-      <div class="widget__divider" />
-
-      <!-- 라디오 -->
-      <section class="widget__section">
-        <p class="widget__label">{{ city.name }} 라디오</p>
-        <p class="widget__station-name">
-          {{ radio.loading ? '방송국 찾는 중…' : (radio.stationName || '재생 가능한 방송국이 없어요') }}
-        </p>
-        <p v-if="radio.autoplayBlocked && !radio.isPlaying" class="widget__hint">
-          🔈 브라우저가 자동재생을 막았어요 — 재생 버튼을 한 번 눌러주세요
-        </p>
-        <div class="widget__buttons">
-          <button :disabled="!radio.streamUrl" @click="radio.togglePlay()">
-            {{ radio.isPlaying ? '⏸ 정지' : '▶ 재생' }}
-          </button>
-          <input
-            class="widget__volume"
-            type="range"
-            min="0"
-            max="1"
-            step="0.05"
-            :value="radio.volume"
-            @input="radio.setVolume($event.target.valueAsNumber)"
-          />
-        </div>
-      </section>
+      <PomodoroPanel v-if="showTimer" />
+      <div v-if="showTimer && showRadio" class="widget__divider" />
+      <RadioPanel v-if="showRadio" :city="city" />
     </div>
   </div>
 </template>
@@ -118,111 +76,6 @@ const collapsed = ref(false)
 
 .widget__body {
   margin-top: 8px;
-}
-
-.widget__section {
-  margin-bottom: 4px;
-}
-
-.widget__label {
-  font-family: var(--font-mono);
-  font-size: 11px;
-  letter-spacing: 0.08em;
-  color: var(--color-amber-dim);
-  margin: 0 0 10px;
-}
-
-.widget__timer {
-  position: relative;
-  width: 108px;
-  height: 108px;
-  margin: 0 auto 12px;
-}
-
-.widget__ring-svg {
-  width: 100%;
-  height: 100%;
-  transform: rotate(-90deg);
-}
-
-.widget__ring-track {
-  fill: none;
-  stroke: rgba(255, 255, 255, 0.1);
-  stroke-width: 6;
-}
-
-.widget__ring-progress {
-  fill: none;
-  stroke: var(--color-amber);
-  stroke-width: 6;
-  stroke-linecap: round;
-  stroke-dasharray: 276;
-  transition: stroke-dashoffset 1s linear;
-}
-
-.widget__timer-text {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-family: var(--font-mono);
-  font-size: 19px;
-}
-
-.widget__buttons {
-  display: flex;
-  gap: 8px;
-  align-items: center;
-  justify-content: center;
-  flex-wrap: wrap;
-}
-
-.widget__buttons button {
-  background: var(--color-amber);
-  color: #1c1a15;
-  border: none;
-  padding: 8px 14px;
-  border-radius: 999px;
-  font-weight: 700;
-  font-size: 12px;
-  cursor: pointer;
-}
-.widget__buttons button:disabled {
-  opacity: 0.4;
-  cursor: default;
-}
-.widget__btn-ghost {
-  background: transparent !important;
-  color: var(--color-cream) !important;
-  border: 1px solid var(--color-line) !important;
-}
-
-.widget__volume {
-  width: 90px;
-  accent-color: var(--color-amber);
-}
-
-.widget__meta {
-  text-align: center;
-  font-size: 11px;
-  color: var(--color-amber-dim);
-  margin: 8px 0 0;
-}
-
-.widget__station-name {
-  text-align: center;
-  font-size: 12px;
-  margin: 0 0 10px;
-  min-height: 16px;
-  color: var(--color-cream);
-}
-
-.widget__hint {
-  text-align: center;
-  font-size: 11px;
-  color: var(--color-amber);
-  margin: -4px 0 10px;
 }
 
 .widget__divider {

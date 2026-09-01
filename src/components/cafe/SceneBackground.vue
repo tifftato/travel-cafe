@@ -6,21 +6,30 @@ const props = defineProps({
   isNight: { type: Boolean, default: false },
 })
 
-// public/assets/bg_{countryEn}.jpg 하나만 사용하고,
-// 밤에는 별도 이미지 없이 CSS 필터로 야간 톤을 입힙니다.
-const { url: bgUrl, exists } = useOptionalImage('bg', props.city.countryEn, 'jpg')
+// public/assets/bg_{countryEn}.jpg (낮, 필수) + bg_{countryEn}-night.jpg (밤, 선택)
+// 밤 사진이 있으면 그걸 그대로 쓰고, 없으면 낮 사진에 CSS 필터로 야간 톤을 입혀서 대체합니다.
+const { url: bgDayUrl, exists: dayExists } = useOptionalImage('bg', props.city.countryEn, 'jpg')
+const { url: bgNightUrl, exists: nightExists } = useOptionalImage('bg', `${props.city.countryEn}-night`, 'jpg')
 </script>
 
 <template>
-  <div class="scene-bg" :class="{ 'scene-bg--night': isNight }">
+  <div class="scene-bg" :class="{ 'scene-bg--night': isNight, 'scene-bg--filtered-night': isNight && !nightExists }">
+    <!-- 낮 사진: 밤이면서 전용 야간 사진이 있는 경우가 아닐 때만 보임 -->
     <img
-      v-show="exists"
-      :src="bgUrl"
+      v-show="dayExists && !(isNight && nightExists)"
+      :src="bgDayUrl"
       :alt="city.landmark"
       class="scene-bg__img"
-      @error="exists = false"
+      @error="dayExists = false"
     />
-    <div v-if="exists === false" class="scene-bg__placeholder">
+    <!-- 밤 전용 사진: isNight && 파일이 있을 때만 -->
+    <img
+      v-if="isNight && nightExists"
+      :src="bgNightUrl"
+      :alt="city.landmark + ' (야간)'"
+      class="scene-bg__img scene-bg__img--night-photo"
+    />
+    <div v-if="dayExists === false" class="scene-bg__placeholder">
       <span class="scene-bg__landmark-icon">🏙️</span>
       <span class="scene-bg__landmark-name">{{ city.landmark }}</span>
       <span class="scene-bg__hint">public/assets/bg_{{ city.countryEn }}.jpg 를 추가해주세요</span>
@@ -40,14 +49,19 @@ const { url: bgUrl, exists } = useOptionalImage('bg', props.city.countryEn, 'jpg
   height: 100%;
   object-fit: cover;
   object-position: center;
-  transition: filter 0.6s ease;
+  transition: filter 0.6s ease, opacity 0.6s ease;
 }
 
-/* 밤: 별도 이미지 없이 어둡게 톤다운 + 푸른 톤 오버레이 */
-.scene-bg--night .scene-bg__img {
+/* 전용 야간 사진은 필터 없이 원본 그대로 (이미 밤 조명으로 촬영/생성됨) */
+.scene-bg__img--night-photo {
+  filter: none;
+}
+
+/* 전용 야간 사진이 없는 나라만: 낮 사진에 CSS로 야간 톤 흉내 */
+.scene-bg--filtered-night .scene-bg__img {
   filter: brightness(0.55) saturate(1.15) hue-rotate(-6deg);
 }
-.scene-bg--night::after {
+.scene-bg--filtered-night::after {
   content: '';
   position: absolute;
   inset: 0;

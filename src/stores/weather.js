@@ -27,6 +27,22 @@ export const useWeatherStore = defineStore('weather', {
   actions: {
     async fetchWeather(city) {
       if (!city) return
+
+      // 갈리프레이처럼 실존 좌표가 없는 도시는 날씨 API를 호출하지 않습니다.
+      // 대신 사용자의 실제 로컬 시간을 기준으로 낮/밤만 판단해서, 창밖 풍경이
+      // 방문하는 시점(사용자의 지금)에 맞는 낮 배경/쌍둥이 태양 vs 밤 배경/두 개의 달을 보여줍니다.
+      if (city.lat == null || city.lng == null) {
+        const hour = new Date().getHours()
+        this.tempC = null
+        this.condition = 'clear'
+        this.isNight = hour < 6 || hour >= 18
+        this.description = ''
+        this.error = null
+        this.loading = false
+        this.lastFetchedCityId = city.id
+        return
+      }
+
       this.loading = true
       this.error = null
       try {

@@ -1,9 +1,84 @@
 <script setup>
-import { computed } from 'vue'
+import { computed, ref, watch } from 'vue'
 
 const props = defineProps({
   condition: { type: String, default: 'clear' }, // clear | clouds | rain | snow | thunderstorm | fog
   isNight: { type: Boolean, default: false },
+  city: { type: Object, default: null }, // 있으면 mask_{country}.png로 창문 모양에 날씨를 클리핑
+})
+
+// mask_{country}.png = frame_{country}.png의 알파를 반전한 흑백 이미지
+// (창문이었던 곳=흰색=날씨가 보임, 소품·벽이었던 곳=검정=날씨가 가려짐)
+// frame.png 자체를 화면에 그리지 않고도 날씨를 창문 모양대로만 클리핑할 수 있어서,
+// 배경(bg_{country}.jpg, 소품까지 포함된 원본 베이크)이 이중 합성 없이 그대로 보입니다.
+//
+// isNight는 라우트 이동 없이 실시간으로 바뀔 수 있는 값이라(같은 도시에서 날씨 API가
+// 갱신되며 낮→밤 전환), 마스크 URL과 존재 여부를 매번 다시 확인합니다. 마스크 파일이
+// 없는 나라(아직 베이크인 이미지가 없는 나라)는 CSS mask를 아예 안 걸어서 날씨가
+// 화면 전체에 정상적으로 보이도록 안전하게 처리합니다 (mask-image가 404면 브라우저마다
+// 동작이 달라 날씨가 통째로 사라질 수 있어서, 존재를 확인한 뒤에만 적용합니다).
+//
+// 밤 전용 마스크(mask_{country}-night.png)가 없으면 낮 마스크로 자동 폴백합니다.
+// 낮/밤은 같은 구도(같은 --seed)라 창문 위치가 동일하므로 낮 마스크를 그대로 써도
+// 정확히 맞습니다 — 야간 프레임 이미지의 해상도/비율이 어긋난 나라(예: 이집트)에서도
+// 안전하게 동작하게 하려는 목적도 있습니다.
+const maskExists = ref(false)
+const maskUrl = ref(null)
+
+function tryLoadMask(url, onSuccess, onFail) {
+  const img = new Image()
+  img.onload = onSuccess
+  img.onerror = onFail
+  img.src = url
+}
+
+watch(
+  () => [props.city?.countryEn, props.isNight],
+  () => {
+    if (!props.city) {
+      maskExists.value = false
+      return
+    }
+    const dayUrl = `/assets/mask_${props.city.countryEn}.png`
+    const nightUrl = `/assets/mask_${props.city.countryEn}-night.png`
+
+    if (!props.isNight) {
+      tryLoadMask(
+        dayUrl,
+        () => { maskUrl.value = dayUrl; maskExists.value = true },
+        () => { maskExists.value = false }
+      )
+      return
+    }
+
+    // 밤: 전용 마스크 먼저 시도, 없으면 낮 마스크로 폴백
+    tryLoadMask(
+      nightUrl,
+      () => { maskUrl.value = nightUrl; maskExists.value = true },
+      () => {
+        tryLoadMask(
+          dayUrl,
+          () => { maskUrl.value = dayUrl; maskExists.value = true },
+          () => { maskExists.value = false }
+        )
+      }
+    )
+  },
+  { immediate: true }
+)
+
+const maskStyle = computed(() => {
+  if (!maskExists.value || !maskUrl.value) return {}
+  return {
+    WebkitMaskImage: `url(${maskUrl.value})`,
+    maskImage: `url(${maskUrl.value})`,
+    WebkitMaskSize: 'cover',
+    maskSize: 'cover',
+    WebkitMaskPosition: 'center bottom',
+    maskPosition: 'center bottom',
+    WebkitMaskRepeat: 'no-repeat',
+    maskRepeat: 'no-repeat',
+  }
 })
 
 const rainDrops = computed(() =>
@@ -45,7 +120,7 @@ const stars = computed(() =>
 </script>
 
 <template>
-  <div class="weather" aria-hidden="true">
+  <div class="weather" :style="maskStyle" aria-hidden="true">
     <!-- 맑은 밤: 별 -->
     <div v-if="condition === 'clear' && isNight" class="weather__stars">
       <span

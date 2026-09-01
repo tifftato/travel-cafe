@@ -12,6 +12,14 @@ dist
 dist-ssr
 *.local
 
+# 환경변수 (API 키 등 민감정보 — 절대 커밋하지 말 것)
+.env
+.env.*
+!.env.example
+
+# vercel dev / vercel link 가 생성하는 로컬 설정
+.vercel
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
@@ -22,6 +30,3 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
-
-.env
-!.env.example

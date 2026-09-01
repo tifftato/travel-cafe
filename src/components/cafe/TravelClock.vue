@@ -1,14 +1,12 @@
 <script setup>
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { useJourneyStore } from '../../stores/journey'
 
 const props = defineProps({
   city: { type: Object, required: true }, // 여행지(도착지)
 })
 
 const router = useRouter()
-const journey = useJourneyStore()
 
 // 1초마다 갱신되는 현재 시각
 const now = ref(new Date())
@@ -26,7 +24,10 @@ const localTime = computed(() =>
 )
 
 // 여행지(도착지) 타임존 시간
+// 갈리프레이처럼 실제 타임존이 없는 곳은 city.timezone === 'relative'로 표시해두고,
+// "타임로드에게 시간은 상대적"이라는 설정으로 사용자의 현지 시간을 그대로 보여줍니다.
 const destTime = computed(() => {
+  if (props.city.timezone === 'relative') return localTime.value
   try {
     return new Intl.DateTimeFormat('ko-KR', {
       hour: '2-digit',
@@ -39,8 +40,8 @@ const destTime = computed(() => {
   }
 })
 
-// 출발지(사용자와 가장 가까운 주요 도시) → 도착지 코드
-const originCode = computed(() => journey.nearestCity?.airportCode || journey.nearestCity?.nameEn?.slice(0, 3).toUpperCase() || 'HOME')
+// 출발지: 위치 기반 추정 없이 고정 라벨로 표시
+const originCode = computed(() => 'HOME')
 const destCode = computed(() => props.city.airportCode)
 
 function goToBillboard() {
@@ -50,12 +51,12 @@ function goToBillboard() {
 
 <template>
   <div class="clock">
-    <div class="clock__times">
-      <span class="clock__time">{{ localTime }}</span>
-      <span class="clock__sep">|</span>
-      <span class="clock__time">{{ destTime }}</span>
+    <div class="clock__times" role="group" :aria-label="`현재 위치 시간 ${localTime}, ${city.name} 시간 ${destTime}`">
+      <span class="clock__time" aria-hidden="true">{{ localTime }}</span>
+      <span class="clock__sep" aria-hidden="true">|</span>
+      <span class="clock__time" aria-hidden="true">{{ destTime }}</span>
     </div>
-    <div class="clock__route">{{ originCode }} → {{ destCode }}</div>
+    <div class="clock__route" aria-hidden="true">{{ originCode }} → {{ destCode }}</div>
     <button class="clock__btn" @click="goToBillboard">✈ 다른 도시로</button>
   </div>
 </template>

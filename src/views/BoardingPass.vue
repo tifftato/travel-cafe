@@ -28,12 +28,14 @@ function playSfx(path) {
 }
 
 function enterCafe() {
-  playSfx('/sounds/jet-takeoff.mp3')
   router.push({ name: 'cafe', params: { cityId: city.value.id } })
 }
 
 onMounted(() => {
   const tl = gsap.timeline()
+
+  // 비행기 소리는 전광판에서 도시를 클릭하는 순간 이미 시작됩니다 (AirportBillboard.vue 참고).
+  // 순서: 보딩 클릭 → 비행기소리 시작 → 도장 쾅 → 카페로 전환
 
   // 1) 발권: 티켓이 프린터에서 뽑혀 나오듯 아래에서 위로 슬라이드 + 페이드인
   tl.fromTo(
@@ -42,7 +44,6 @@ onMounted(() => {
     { y: 0, opacity: 1, scale: 1, duration: 0.7, ease: 'power3.out' },
     0
   )
-  tl.call(() => playSfx('/sounds/airport-chime.mp3'), null, 0.1)
 
   // 2) 탑승 확인 스탬프
   tl.call(() => {
@@ -77,6 +78,7 @@ onMounted(() => {
 
 <template>
   <main v-if="city" class="boarding">
+    <h1 class="sr-only">{{ city.name }} 탑승권 발권 중</h1>
     <div ref="ticketRef" class="ticket">
       <div class="ticket__main">
         <div class="ticket__row ticket__row--brand">
@@ -127,7 +129,7 @@ onMounted(() => {
       </div>
     </div>
 
-    <div class="boarding__action">
+    <div class="boarding__action" role="status" aria-live="polite">
       <transition name="fade" mode="out-in">
         <div v-if="stage === 'gate'" key="gate" class="boarding__progress-wrap">
           <p class="boarding__hint">🛫 게이트 통과 중 · {{ city.name }} 카페로 이동합니다</p>

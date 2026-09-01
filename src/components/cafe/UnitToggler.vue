@@ -5,7 +5,11 @@ const config = useConfigStore()
 </script>
 
 <template>
-  <button class="unit-toggler" @click="config.toggleUnit()">
+  <button
+    class="unit-toggler"
+    :aria-label="`현재 ${config.unitSymbol} 단위 표시 중. 클릭하면 ${config.unitSymbol === '°C' ? '화씨' : '섭씨'}로 전환합니다.`"
+    @click="config.toggleUnit()"
+  >
     {{ config.unitSymbol }}
   </button>
 </template>
