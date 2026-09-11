@@ -12,6 +12,7 @@ import TravelClock from '../components/cafe/TravelClock.vue'
 import CafeWidget from '../components/cafe/CafeWidget.vue'
 import UnitToggler from '../components/cafe/UnitToggler.vue'
 import AmbientSound from '../components/cafe/AmbientSound.vue'
+import LandmarkTrivia from '../components/cafe/LandmarkTrivia.vue'
 
 const props = defineProps({
   cityId: { type: String, required: true },
@@ -77,6 +78,10 @@ const needsFloatingWidget = computed(() => !hasTimerHotspot.value || !hasRadioHo
       <span v-else-if="weather.loading">날씨 불러오는 중…</span>
       <span v-else-if="weather.error" class="cafe__hud--error">⚠️ 날씨를 불러오지 못했습니다</span>
     </div>
+
+    <!-- 도착 직후 살짝 떴다 사라지는 랜드마크 한 줄 트리비아. 오늘 날짜 기준으로 문구가
+         결정되므로, 다음에 다시 방문하면 다른 이야기를 볼 수 있습니다. -->
+    <LandmarkTrivia :city-id="city.id" />
 
     <div class="cafe__top-right">
       <button v-if="!isBakedIn" class="cafe__sound-toggle" @click="frameVisible = !frameVisible" :aria-label="frameVisible ? '창틀 숨기기' : '창틀 보이기'">

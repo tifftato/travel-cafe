@@ -1,30 +1,17 @@
 <script setup>
 import { ref, computed } from 'vue'
 import { coffeeFortunes } from '../../data/coffeeFortunes'
+import { dailyPick } from '../../utils/dailyPick'
 
 const props = defineProps({
   cityId: { type: String, required: true },
 })
 const emit = defineEmits(['close'])
 
-function todayKey() {
-  const d = new Date()
-  return `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`
-}
-
 // 오늘 날짜 + 도시를 섞어서 하나를 결정적으로 고릅니다 — 새로고침해도 오늘 안엔 같은 문구.
 // "다시 보기"를 누르면 오늘 하루에 한해 다시 뽑을 수 있습니다.
-function pickIndex(seedExtra = 0) {
-  const seed = `${todayKey()}:${props.cityId}:${seedExtra}`
-  let hash = 0
-  for (let i = 0; i < seed.length; i++) {
-    hash = (hash * 31 + seed.charCodeAt(i)) >>> 0
-  }
-  return hash % coffeeFortunes.length
-}
-
 const rerollCount = ref(0)
-const fortune = computed(() => coffeeFortunes[pickIndex(rerollCount.value)])
+const fortune = computed(() => dailyPick(coffeeFortunes, `${props.cityId}:coffee`, rerollCount.value))
 
 function reroll() {
   rerollCount.value += 1

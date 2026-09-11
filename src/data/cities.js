@@ -185,7 +185,21 @@ export const cities = [
   {
     id: 'melbourne',
     countryEn: 'australia',
-    tableTopVh: 43, // frame_australia.png 알파 채널 분석으로 측정한 테이블 상단 위치
+    tableTopVh: 30, // frame_australia.png(베이크인 버전) 알파 채널 분석으로 재측정한 테이블 상단 위치
+    hotspots: {
+      timer: {
+        screen: { x: 0.5233, y: 0.7566, width: 0.0538, height: 0.0457 },
+      },
+      radio: {
+        display: { x: 0.3917, y: 0.712, width: 0.1047, height: 0.0478 },
+        power: { x: 0.3977, y: 0.8098 },
+        volume: { x: 0.4426, y: 0.7917 },
+      },
+      coffee: {
+        region: { x: 0.5981, y: 0.7333, width: 0.1376, height: 0.1275 },
+        point: { x: 0.6639, y: 0.8077 },
+      },
+    },
     name: '멜버른',
     nameEn: 'Melbourne',
     country: '호주',

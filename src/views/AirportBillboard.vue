@@ -29,6 +29,15 @@ function goToBoarding(cityId) {
   router.push({ name: 'boarding', params: { cityId } })
 }
 
+// "어디로든" — 검색/목록 스크롤 없이 결정 피로 없이 바로 몰입 모드로.
+// 검색어가 입력돼 있으면 그 검색 결과 안에서, 아니면 전체 도시 중에서 무작위로 고릅니다.
+function goToRandom() {
+  const pool = displayedCities.value.length ? displayedCities.value : journey.allCities
+  if (!pool.length) return
+  const city = pool[Math.floor(Math.random() * pool.length)]
+  goToBoarding(city.id)
+}
+
 // STATUS는 전광판에 "새로 진입할 때"만 무작위로 정해지고, 보고 있는 동안은 고정됩니다.
 // (도시를 선택해 나갔다가 다시 돌아오면 컴포넌트가 새로 마운트되면서 다시 뽑힙니다)
 const STATUS_CYCLE = ['ON TIME', 'BOARDING', 'FINAL CALL', 'NOW BOARDING']
@@ -68,6 +77,14 @@ function statusClass(status) {
         placeholder="도시 검색 (예: 파리, Tokyo, 이탈리아)"
         @input="onSearchInput"
       />
+      <button
+        class="billboard__random"
+        type="button"
+        @click="goToRandom"
+        :aria-label="query ? '검색 결과 중 무작위로 한 곳 선택' : '오늘은 어디로 갈까요? 무작위로 한 곳 선택'"
+      >
+        🎲 어디로든
+      </button>
     </header>
 
     <div class="billboard__columns" aria-hidden="true">
@@ -142,6 +159,26 @@ function statusClass(status) {
   border-radius: 4px;
   font-family: var(--font-mono);
   min-width: 260px;
+}
+
+.billboard__random {
+  background: transparent;
+  border: 1px solid var(--color-amber-dim);
+  color: var(--color-amber);
+  padding: 10px 16px;
+  border-radius: 4px;
+  font-family: var(--font-mono);
+  font-size: 14px;
+  font-weight: 700;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.billboard__random:hover,
+.billboard__random:focus-visible {
+  background: rgba(255, 179, 71, 0.12);
+  border-color: var(--color-amber);
 }
 
 .billboard__columns {
