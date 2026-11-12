@@ -7,6 +7,9 @@ Vue 3 + Vite + Pinia + Vue Router로 만들었고, Vercel 배포를 기준으로
 공항 전광판(도시 선택) → 탑승권 발권 애니메이션 → 카페 워크스페이스(작업 화면)
 ```
 
+> 🔁 프로젝트를 이어받는다면 먼저 [`HANDOFF.md`](HANDOFF.md)(구조·스키마·함정·미완료 이슈 요약)와
+> [`CLAUDE.md`](CLAUDE.md)(Claude 작업 지침)를 읽어주세요.
+
 ---
 
 ## 목차
@@ -57,7 +60,7 @@ OPENWEATHER_API_KEY=여기에_발급받은_키
 
 | 경로 | 설명 |
 | --- | --- |
-| `/` | 공항 출발 전광판 — 도시 검색 + 18개 주요 도시, 실시간 항공편 STATUS |
+| `/` | 공항 출발 전광판 — 도트 매트릭스 글자로 도시명·현지 시각 표시, 도시 검색, 항공편 STATUS |
 | `/boarding/:cityId` | 탑승권 발권 → BOARDED 스탬프 → 2초 자동 카운트다운 → 카페 입장 |
 | `/cafe/:cityId` | 카페 워크스페이스 — 배경/날씨/창틀/시계/포모도로/라디오 |
 
@@ -65,11 +68,11 @@ OPENWEATHER_API_KEY=여기에_발급받은_키
 
 ```
 src/
-  data/cities.js          # 도시 18개 데이터 (좌표, 국가코드, 랜드마크, tableTopVh 등)
+  data/cities.js          # 도시 데이터 (좌표, 국가코드, 랜드마크, tableTopVh 등)
   stores/                 # Pinia: journey, weather, radio, pomodoro, config
   views/
     AirportBillboard.vue  # (0) 전광판
-    BoardingPass.vue      # (1) 탑승권 발권
+    BoardingPass.vue      # (1) 탑승권 발권 (프린터 슬롯·LCD 창 + 포물선 비행 마이크로 인터랙션)
     CafeWorkspace.vue     # (2) 카페 워크스페이스
   components/cafe/
     SceneBackground.vue   # 배경 레이어 (bg_*.jpg, 야간 CSS 필터)
@@ -96,6 +99,15 @@ api/
 
 ## 어디로든 + 랜드마크 트리비아
 
+- **도트 매트릭스 전광판**(`components/common/DotMatrixText.vue`, `utils/dotMatrixFont.js`, `utils/worldTime.js`):
+  도시명(영문)·편명·현지 시각을 5×7 도트 폰트로 canvas에 그립니다. 꺼진 점도 흐리게 깔아 LED 패널 느낌을
+  냅니다. 시각은 `Intl.DateTimeFormat`(타임존별 캐시)로 계산하고 1초마다 콜론이 깜빡이며, 사용자 현지
+  날짜와 다르면 `+1D`/`-1D`를 붙입니다. 한글은 도트 폰트에 없어서 영문 도트 아래에 일반 글자로 병기합니다.
+- **탑승권 프린터**(`BoardingPass.vue`): 프린터 윗면 슬롯에서 티켓이 `steps()` 이징으로 끊어 올라오고(감열
+  프린터 느낌), 본체가 살짝 떨립니다. 정면 LCD 창은 `PRINTING → ISSUED → GATE A1`을 도트로 표시합니다.
+- **포물선 비행 마이크로 인터랙션**: 티켓의 HOME → 도착지 사이를 비행기가 포물선(`y = h·(1−4t(1−t))`)을
+  따라 날고, 접선 방향으로 기수가 기울며, 지나온 자리는 실선 꼬리로 이어집니다. 끝나면 잠깐 쉬고 반복.
+  `prefers-reduced-motion`이면 꼭대기에 멈춘 정지 컷만 보여줍니다.
 - **어디로든 버튼**(`AirportBillboard.vue`): 전광판 검색창 옆의 🎲 버튼. 검색어가 있으면 그 결과
   안에서, 없으면 전체 도시 중에서 무작위로 골라 바로 탑승 절차로 넘어갑니다. 목록을 훑어보지 않고
   바로 몰입하고 싶을 때 쓰는 용도라, 클릭 한 번으로 끝나게 만들었습니다.
