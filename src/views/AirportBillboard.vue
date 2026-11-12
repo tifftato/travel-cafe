@@ -56,6 +56,16 @@ function onNarrowChange(e) {
   isNarrow.value = e.matches
 }
 const dot = computed(() => (isNarrow.value ? 1.6 : 3))
+// STATUS는 가장 긴 문구(NOW BOARDING, 71열)가 칸에 들어가도록 한 단계 작은 점으로 그립니다.
+const statusDot = computed(() => (isNarrow.value ? 1.2 : 2))
+
+// 상태별 LED 색: 공항 전광판 관례 (탑승중=초록, 마감임박=빨강, 탑승준비=앰버, 정상=중립)
+function statusColor(status) {
+  if (status === 'NOW BOARDING') return '#7cf29c'
+  if (status === 'FINAL CALL') return '#ff6b5e'
+  if (status === 'BOARDING') return '#ffb347'
+  return '#c9bfa6'
+}
 
 onMounted(() => {
   const map = {}
@@ -108,7 +118,7 @@ function statusClass(status) {
     <h1 class="sr-only">Travel Café 출발 전광판 — 여행할 도시를 선택하세요</h1>
     <header class="billboard__header">
       <div class="billboard__brand" aria-hidden="true">
-        <span class="billboard__brand-name">TRAVEL CAFÉ ✈</span>
+        <DotMatrixText text="TRAVEL CAFÉ ✈" :dot="isNarrow ? 1.6 : 2.6" color="#c98a3a" />
         <DotMatrixText text="DEPARTURES" :dot="isNarrow ? 2.4 : 4" />
       </div>
       <label for="city-search" class="sr-only">도시 검색</label>
@@ -134,7 +144,6 @@ function statusClass(status) {
       <div class="col col--flight">FLIGHT</div>
       <div class="col col--city">DESTINATION</div>
       <div class="col col--time">LOCAL TIME</div>
-      <div class="col col--gate">LANDMARK</div>
       <div class="col col--status">STATUS</div>
     </div>
 
@@ -147,7 +156,7 @@ function statusClass(status) {
       >
         <button
           class="billboard__row"
-          :aria-label="`${city.name}, ${city.landmark}, 항공편 ${flightCode(idx)}, 현지 시각 ${timeInfo(city).plain}, 상태 ${statusFor(city)}. 클릭하면 탑승 절차가 시작됩니다.`"
+          :aria-label="`${city.name}, 항공편 ${flightCode(idx)}, 현지 시각 ${timeInfo(city).plain}, 상태 ${statusFor(city)}. 클릭하면 탑승 절차가 시작됩니다.`"
           @click="goToBoarding(city.id)"
         >
           <span class="col col--flight" aria-hidden="true">
@@ -161,9 +170,8 @@ function statusClass(status) {
             <DotMatrixText :text="timeInfo(city).text" :dot="dot" />
             <span class="billboard__time-note">{{ timeInfo(city).relative ? 'RELATIVE' : timeInfo(city).diff }}</span>
           </span>
-          <span class="col col--gate" aria-hidden="true">{{ city.landmark }}</span>
           <span class="col col--status" :class="statusClass(statusFor(city))" aria-hidden="true">
-            {{ statusFor(city) }}
+            <DotMatrixText :text="statusFor(city)" :dot="statusDot" :color="statusColor(statusFor(city))" :min-cols="71" />
           </span>
         </button>
       </li>
@@ -177,8 +185,8 @@ function statusClass(status) {
 
 <style scoped>
 .billboard {
-  /* FLIGHT | DESTINATION | LOCAL TIME | LANDMARK | STATUS — 도트 글자 폭(점 4px × 열 수)에 맞춰 잡은 폭 */
-  --board-cols: 150px minmax(0, 1.2fr) 170px minmax(0, 1fr) 130px;
+  /* FLIGHT | DESTINATION | LOCAL TIME | STATUS — 도트 글자 폭(점 4px × 열 수)에 맞춰 잡은 폭 */
+  --board-cols: 150px minmax(0, 1fr) 170px 230px;
   width: 100%;
   height: 100%;
   background: radial-gradient(circle at 50% 0%, #0f1420 0%, #05060a 70%);
@@ -202,13 +210,6 @@ function statusClass(status) {
   align-items: center;
   flex-wrap: wrap;
   gap: 8px 18px;
-}
-
-.billboard__brand-name {
-  font-family: var(--font-mono);
-  letter-spacing: 0.08em;
-  color: var(--color-amber);
-  font-size: clamp(14px, 1.8vw, 18px);
 }
 
 .billboard__search {
@@ -288,7 +289,6 @@ function statusClass(status) {
 .billboard__row .col--time {
   align-self: start;
 }
-.billboard__row .col--gate,
 .billboard__row .col--status {
   align-self: center;
 }
@@ -337,22 +337,12 @@ function statusClass(status) {
   letter-spacing: 0.06em;
 }
 
-/* 상태별 색상: 공항 전광판 관례를 따름 (탑승중=초록/앰버, 마감임박=빨강, 정상=중립) */
+/* 색은 도트 글자(statusColor)가 정하고, 여기서는 상태별 효과만: 마감임박은 깜빡임, 정상은 살짝 어둡게 */
 .status--ontime {
-  color: var(--color-cream);
   opacity: 0.7;
 }
-.status--soon {
-  color: var(--color-amber);
-}
 .status--final {
-  color: #ff6b5e;
-  font-weight: 700;
   animation: status-blink 1.2s ease-in-out infinite;
-}
-.status--boarding {
-  color: #7cf29c;
-  font-weight: 700;
 }
 @keyframes status-blink {
   0%, 100% { opacity: 1; }
@@ -393,9 +383,6 @@ function statusClass(status) {
     grid-area: status;
     text-align: right;
     font-size: 12px;
-  }
-  .billboard__row .col--gate {
-    display: none;
   }
 }
 </style>
