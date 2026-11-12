@@ -43,6 +43,7 @@ src/data/cities.js                도시 19개 데이터 (좌표·핫스팟·tab
 src/data/landmarkTrivia.js        도시별 트리비아 (도시당 5개)
 src/data/coffeeFortunes.js        커피점 50문구
 src/data/tardisPaths.js           타디스 비행 경로 24개
+public/assets/tardis/             타디스 3D 모델(tardis.obj + jpg 텍스처 4장) — TardisFlyby가 three.js로 렌더, 첫 비행 직전 동적 로드
 src/stores/                       journey(도시목록) weather radio pomodoro config
 src/composables/                  useImageRegion / useImageHotspot / useOptionalImage
 src/utils/dailyPick.js            날짜+시드 결정적 선택 (커피점·트리비아 공용)
@@ -138,6 +139,10 @@ with sync_playwright() as p:
 
 ## 9. 현재 알려진 이슈 / 미완료
 
+- 🚔 타디스는 2005 폴리스박스 OBJ 모델을 three.js로 렌더(`TardisFlyby.vue`). 모델/three는 첫 비행 직전에만 로드되고,
+  로딩/WebGL 실패 시 예전 CSS 박스로 폴백. 출처(원작자 크레딧)는 사용자가 올린 파일 기준이라 공개 배포 시 확인 필요.
+  테스트: 개발 중엔 `document.querySelector('.tardis').__vueParentComponent.exposed.flyOnce()`로 즉시 비행.
+
 - ✅ (수정됨) 탑승권 하단 진행 막대가 안 차던 문제: 막대가 gate 단계에서야 `v-if`로 생겨서 마운트 시점 gsap 타깃이
   null이었음 → CSS 애니메이션(`gate-fill`)으로 교체, 카페 이동은 타임라인 `tl.call(enterCafe)`로 분리.
 - 🎞️ 탑승권 연출 길이가 약 1초 늘었음(프린터 인쇄 1.3s). 더 빠르길 원하면 `BoardingPass.vue`의 `PRINT_DUR`만 줄이면 됨.
@@ -148,7 +153,7 @@ with sync_playwright() as p:
 - 🔇 `pomodoro.js`의 완료 알림음 훅이 `TODO` 상태.
 - 🍵 `coffee.iced`는 **서울만 true**. 나머지는 전부 뜨거운 음료로 가정(사진 확인 필요 — 베트남 카페 쓰어다 등 애매).
 - 🖼️ 갈리프레이: `day-frame`이 3:2라 16:9로 강제 리사이즈(가로 +8.9%/세로 −8.1% 왜곡, 육안상 미미). 밤 프레임 없음 → 낮 마스크 폴백.
-  타디스는 실제 3D 모델이 아니라 CSS 3D 박스.
+  
 - 🔑 날씨는 `OPENWEATHER_API_KEY` 필수(미설정 시 폴백 동작).
 - 🧪 PWA, `pinia-plugin-persistedstate`, Notification API는 미구현.
 
